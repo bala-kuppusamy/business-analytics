@@ -1,0 +1,137 @@
+---
+title: "QVC- Marketing Analysis"
+author: "Anjali Bapat"
+date: "2 July 2019"
+output:
+  html_document:
+    number_sections: true
+    toc: true
+    fig_width: 8
+    fig_height: 5
+    theme: cosmo
+    highlight: tango
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,warning=FALSE}
+
+library(tidyverse)
+library(ggplot2)
+
+```
+
+```{r}
+
+orders_merged <- readRDS(file = 'rdata/orders_merged.Rda')
+summary(orders_merged)
+
+orders_merged_us <- orders_merged %>%
+  dplyr::filter(COUNTRY == 'US')
+summary(orders_merged_us)
+
+```
+
+
+# Filter for US Market
+```{r}
+# TODO - 
+
+```
+
+
+# Top 10 Products sold in US by frequency
+```{r,warning=FALSE}
+
+top_products <- order_master_merged %>% 
+  group_by(PRODUCT_DESCRIPTION) %>% 
+  summarize(count = n(), dollars = sum(TOTAL_LINE_AMT)) %>% 
+  top_n(10, wt = dollars) %>%
+  arrange(desc(dollars))
+
+top_products %>%
+  ggplot(mapping = aes(x = reorder(PRODUCT_DESCRIPTION, dollars), y = dollars, size = count)) +
+  geom_point(color = 'pink') +
+  labs(x = "", y = "Top 10 Best Sellers") +
+  coord_flip() +
+  theme_grey(base_size = 12)
+
+top_products %>%
+  ggplot(aes(x = reorder(PRODUCT_DESCRIPTION, count), y = count))+
+  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
+  labs(x = "", y = "Top 10 Best Sellers") +
+  coord_flip() +
+  theme_grey(base_size = 12)
+
+```
+
+
+
+
+# Top 10 product category sell in US by frequency
+```{r,warning=FALSE}
+trans %>% 
+  group_by(PRODUCT_CATEGORY) %>% 
+  summarize(count = n()) %>% 
+  top_n(10, wt = count) %>%
+  arrange(desc(count)) %>% 
+  ggplot(aes(x = reorder(PRODUCT_CATEGORY, count), y = count))+
+  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
+  labs(x = "", y = "Top 10 Best sellers by frequency") +
+  coord_flip() +
+  theme_grey(base_size = 12)
+```
+
+# Top 10 product category sell in US by sales
+```{r,warning=FALSE}
+trans%>%
+  group_by(PRODUCT_CATEGORY)%>%
+  summarize(sales = sum(TOTAL_LINE_AMT)) %>% 
+  top_n(10, wt = sales) %>%
+  arrange(desc(sales)) %>% 
+  ggplot(aes(x = reorder(PRODUCT_CATEGORY,sales), y = sales))+
+  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
+  labs(x = "", y = "Top 10 Best Sellers by sales") +
+  coord_flip() +
+  theme_grey(base_size = 12)
+```
+
+# What time of day do people buy more often?
+
+```{r,message=FALSE,warning=FALSE}
+library(lubridate)
+trans %>%
+  ggplot(aes(hour(hms(ORDER_TIME)))) +
+  geom_histogram(stat = "count",fill = "#E69F00", colour = "red") +
+  labs(x = "Hour of Day", y = "") +
+  theme_grey(base_size = 12)
+```
+
+# What day of the week do people buy more often?
+```{r,warning=FALSE}
+trans %>%
+  ggplot(aes(wday(ORDER_DATE,
+                  week_start = getOption("lubridate.week.start", 1)))) +
+  geom_histogram(stat = "count" , fill = "forest green", colour = "dark green") +
+  labs(x = "Day of Week", y = "") +
+  scale_x_continuous(breaks = c(1,2,3,4,5,6,7),
+                     labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+  theme_grey(base_size = 14)
+```
+
+# Which order platform is used most to make orders?
+```{r}
+trans%>%
+  group_by(ORDER_PLATFORM)%>%
+  summarize(count = n()) %>% 
+  #top_n(10, wt = count) %>%
+  arrange(desc(count)) %>% 
+  ggplot(aes(x = reorder(ORDER_PLATFORM, count), y = count))+
+  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
+  labs(x = "", y = "Top Order platforms") +
+  coord_flip() +
+  theme_grey(base_size = 12)
+```
