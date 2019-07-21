@@ -1,34 +1,28 @@
 
 library(tidyverse)
-library(chron)
+library(lubridate)
 
 prep_orders <- function(order_master, product_master, customer_master) {
-  orders_merged <- order_master %>%
+  orders <- order_master %>%
     dplyr::left_join(product_master, by = 'PRODUCT_NBR', keep = TRUE) %>%
     dplyr::left_join(customer_master, by = 'CUSTOMER_NBR', keep = TRUE)
 
-  orders_merged$ORDER_NBR <- as.character(orders_merged$ORDER_NBR)
-  orders_merged$PRODUCT_DESCRIPTION <- as.character(orders_merged$PRODUCT_DESCRIPTION)
+  orders$ORDER_NBR <- as.character(orders$ORDER_NBR)
+  orders$PRODUCT_DESCRIPTION <- as.character(orders$PRODUCT_DESCRIPTION)
+  orders$ORDER_TIME <- lubridate::ymd_hms(paste(orders$ORDER_DATE, orders$ORDER_TIME, sep = ' '))
+  orders$ORDER_DATE <- lubridate::ymd(orders$ORDER_DATE)
+  orders$SHOPPER_SEGMENT_CODE = factor(ifelse(orders$SHOPPER_SEGMENT_CODE == 'NULL', '6', orders$SHOPPER_SEGMENT_CODE))
 
-  orders_merged$ORDER_DATE <- as.character(orders_merged$ORDER_DATE)
-  orders_merged$ORDER_TIME <- as.character(orders_merged$ORDER_TIME)
-  orders_merged$ORDER_TIME <- chron::chron(dates. = orders_merged$ORDER_DATE,
-                                           times. = as.character(orders_merged$ORDER_TIME),
-                                           format = c('y-m-d', 'h:m:s'))
-  orders_merged$ORDER_DATE <- as.Date.factor(orders_merged$ORDER_DATE, '%Y-%m-%d')
+  orders$ORDER_PLATFORM = as.character(orders$ORDER_PLATFORM)
+  orders$ORDER_PLATFORM = ifelse(orders$ORDER_PLATFORM == 'On Air - 2nd Channel', 'On Air', orders$ORDER_PLATFORM)
+  orders$ORDER_PLATFORM = factor(orders$ORDER_PLATFORM)
 
-  orders_merged$SHOPPER_SEGMENT_CODE = ifelse(orders_merged$SHOPPER_SEGMENT_CODE == 'NULL', '6', orders_merged$SHOPPER_SEGMENT_CODE)
-  orders_merged$SHOPPER_SEGMENT_CODE = factor(orders_merged$SHOPPER_SEGMENT_CODE)
-
-  orders_merged$ORDER_PLATFORM = as.character(orders_merged$ORDER_PLATFORM)
-  orders_merged$ORDER_PLATFORM = ifelse(orders_merged$ORDER_PLATFORM == 'On Air - 2nd Channel', 'On Air', orders_merged$ORDER_PLATFORM)
-  orders_merged$ORDER_PLATFORM = factor(orders_merged$ORDER_PLATFORM)
-
-  orders_merged <- na.omit(orders_merged)
+  orders <- na.omit(orders)
 
   # skip 2014 year order data.
-  orders_merged <- orders_merged %>%
-    dplyr::filter(ORDER_DATE >= as.Date('2015-01-01', '%Y-%m-%d'))
+  yr2015 <- lubridate::ymd('2015-01-01')
+  orders <- orders %>%
+    dplyr::filter(ORDER_DATE >= yr2015)
 
-  return(orders_merged)
+  return(orders)
 }

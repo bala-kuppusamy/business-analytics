@@ -24,21 +24,16 @@ library(ggplot2)
 
 ```
 
+
+## Skip non-US order data
+
 ```{r}
 
-orders_merged <- readRDS(file = 'rdata/orders_merged.Rda')
-summary(orders_merged)
-
-orders_merged_us <- orders_merged %>%
+orders <- readRDS(file = 'rdata/orders_merged.Rda')
+orders <- orders %>%
   dplyr::filter(COUNTRY == 'US')
-summary(orders_merged_us)
 
-```
-
-
-# Filter for US Market
-```{r}
-# TODO - 
+summary(orders)
 
 ```
 
@@ -46,7 +41,7 @@ summary(orders_merged_us)
 # Top 10 Products sold in US by frequency
 ```{r,warning=FALSE}
 
-top_products <- order_master_merged %>% 
+top_products <- orders %>% 
   group_by(PRODUCT_DESCRIPTION) %>% 
   summarize(count = n(), dollars = sum(TOTAL_LINE_AMT)) %>% 
   top_n(10, wt = dollars) %>%
