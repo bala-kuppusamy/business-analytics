@@ -1,7 +1,7 @@
 ---
-title: "QVC- Marketing Analysis"
-author: "Anjali Bapat"
-date: "2 July 2019"
+title: "Advanced Business Analytics - QVC- Marketing Analysis"
+author: "Anjali Bapat, Shalini Pai, Krishna Raghavalu, Bala Kuppusamy, Osama Almasri"
+date: "20 July 2019"
 output:
   html_document:
     number_sections: true
@@ -13,120 +13,119 @@ output:
     code_folding: hide
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
+
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
-```{r,warning=FALSE}
+
+```{r libraries, include = FALSE, message = FALSE, warning = FALSE}
 
 library(tidyverse)
 library(ggplot2)
+library(lubridate)
 
 ```
 
 
-## Skip non-US order data
+# Skip non-US order data
 
-```{r}
+Select only US orders for further analysis / visualization.
+
+```{r filter-data, message = FALSE, warning = FALSE}
 
 orders <- readRDS(file = 'rdata/orders_merged.Rda')
 orders <- orders %>%
   dplyr::filter(COUNTRY == 'US')
 
-summary(orders)
-
 ```
 
 
-# Top 10 Products sold in US by frequency
-```{r,warning=FALSE}
+# Top products
 
-top_products <- orders %>% 
-  group_by(PRODUCT_DESCRIPTION) %>% 
-  summarize(count = n(), dollars = sum(TOTAL_LINE_AMT)) %>% 
-  top_n(10, wt = dollars) %>%
-  arrange(desc(dollars))
+```{r top_products, message = FALSE, warning = FALSE}
 
-top_products %>%
-  ggplot(mapping = aes(x = reorder(PRODUCT_DESCRIPTION, dollars), y = dollars, size = count)) +
+top_products_by_desc <- orders %>% 
+  dplyr::group_by(PRODUCT_DESCRIPTION) %>% 
+  dplyr::summarize(count = n(), dollars = sum(TOTAL_LINE_AMT)) %>% 
+  dplyr::top_n(10, wt = dollars) %>%
+  dplyr::arrange(dplyr::desc(dollars))
+
+top_products_by_desc %>%
+  ggplot(mapping = aes(x = reorder(PRODUCT_DESCRIPTION, dollars), y = dollars / 1000, size = count)) +
   geom_point(color = 'pink') +
-  labs(x = "", y = "Top 10 Best Sellers") +
+  labs(x = '', y = 'Sale Amount (`000 USD)', size = 'Sale Volume', title = 'Top 10 Products by Sale Revenue') +
   coord_flip() +
   theme_grey(base_size = 12)
 
-top_products %>%
-  ggplot(aes(x = reorder(PRODUCT_DESCRIPTION, count), y = count))+
-  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
-  labs(x = "", y = "Top 10 Best Sellers") +
+top_products_by_desc %>%
+  ggplot(mapping = aes(x = reorder(PRODUCT_DESCRIPTION, count), y = count)) +
+  geom_bar(stat = 'identity', fill = 'royalblue', colour = 'blue') +
+  labs(x = '', y = 'Sale Volume', title = 'Top 10 Products by Sale Volume') +
   coord_flip() +
   theme_grey(base_size = 12)
 
 ```
 
 
+# Top product categories
 
+```{r top_categories, message = FALSE, warning = FALSE}
 
-# Top 10 product category sell in US by frequency
-```{r,warning=FALSE}
-trans %>% 
-  group_by(PRODUCT_CATEGORY) %>% 
-  summarize(count = n()) %>% 
-  top_n(10, wt = count) %>%
-  arrange(desc(count)) %>% 
-  ggplot(aes(x = reorder(PRODUCT_CATEGORY, count), y = count))+
-  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
-  labs(x = "", y = "Top 10 Best sellers by frequency") +
+products_by_cat <- orders %>%
+  dplyr::group_by(PRODUCT_CATEGORY) %>%
+  dplyr::summarize(count = n(), SALE_AMT = sum(TOTAL_LINE_AMT)) %>%
+  dplyr::top_n(10, wt = SALE_AMT) %>%
+  dplyr::arrange(dplyr::desc(SALE_AMT))
+
+products_by_cat %>%
+  ggplot(mapping = aes(x = reorder(PRODUCT_CATEGORY, SALE_AMT), y = SALE_AMT / 1000)) +
+  geom_bar(stat = 'identity', fill = 'royalblue', colour = 'blue') +
+  labs(x = '', y = 'Sale Amount (`000 USD)', title = 'Top 10 Product Categories by Sale Revenue') +
   coord_flip() +
   theme_grey(base_size = 12)
+
 ```
 
-# Top 10 product category sell in US by sales
-```{r,warning=FALSE}
-trans%>%
-  group_by(PRODUCT_CATEGORY)%>%
-  summarize(sales = sum(TOTAL_LINE_AMT)) %>% 
-  top_n(10, wt = sales) %>%
-  arrange(desc(sales)) %>% 
-  ggplot(aes(x = reorder(PRODUCT_CATEGORY,sales), y = sales))+
-  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
-  labs(x = "", y = "Top 10 Best Sellers by sales") +
-  coord_flip() +
+
+# Top time of day & day of the week for order placement
+
+```{r order_time, message = FALSE, warning = FALSE}
+
+feb_orders <- orders %>%
+  dplyr::filter(lubridate::month(ORDER_DATE) == 2)
+
+feb_orders %>%
+  ggplot(mapping = aes(x = lubridate::hour(ORDER_TIME))) +
+  geom_histogram(stat = 'count', fill = '#E69F00', colour = 'red') +
+  labs(x = 'Hour of Day', y = '', title = 'Order volume by hour of the day') +
   theme_grey(base_size = 12)
-```
 
-# What time of day do people buy more often?
-
-```{r,message=FALSE,warning=FALSE}
-library(lubridate)
-trans %>%
-  ggplot(aes(hour(hms(ORDER_TIME)))) +
-  geom_histogram(stat = "count",fill = "#E69F00", colour = "red") +
-  labs(x = "Hour of Day", y = "") +
-  theme_grey(base_size = 12)
-```
-
-# What day of the week do people buy more often?
-```{r,warning=FALSE}
-trans %>%
-  ggplot(aes(wday(ORDER_DATE,
-                  week_start = getOption("lubridate.week.start", 1)))) +
-  geom_histogram(stat = "count" , fill = "forest green", colour = "dark green") +
-  labs(x = "Day of Week", y = "") +
-  scale_x_continuous(breaks = c(1,2,3,4,5,6,7),
-                     labels = c("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")) +
+feb_orders %>%
+  ggplot(mapping = aes(x = lubridate::wday(ORDER_DATE, label = TRUE, abbr = TRUE))) +
+  geom_histogram(stat = 'count' , fill = 'forest green', colour = 'dark green') +
+  labs(x = 'Day of Week', y = '', title = 'Order volume by day of the week') +
   theme_grey(base_size = 14)
+
 ```
 
-# Which order platform is used most to make orders?
-```{r}
-trans%>%
-  group_by(ORDER_PLATFORM)%>%
-  summarize(count = n()) %>% 
-  #top_n(10, wt = count) %>%
-  arrange(desc(count)) %>% 
-  ggplot(aes(x = reorder(ORDER_PLATFORM, count), y = count))+
-  geom_bar(stat = "identity", fill = "royalblue", colour = "blue") +
-  labs(x = "", y = "Top Order platforms") +
+
+# Top platform for order placement
+
+```{r top_platform, message = FALSE, warning = FALSE}
+
+products_by_platform <- orders %>%
+  dplyr::group_by(ORDER_PLATFORM) %>%
+  dplyr::summarize(count = n(), SALE_AMT = sum(TOTAL_LINE_AMT)) %>%
+  dplyr::top_n(10, wt = SALE_AMT) %>%
+  dplyr::arrange(dplyr::desc(SALE_AMT))
+
+products_by_platform %>%
+  ggplot(mapping = aes(x = reorder(ORDER_PLATFORM, SALE_AMT), y = SALE_AMT / 1000)) +
+  geom_bar(stat = 'identity', fill = 'royalblue', colour = 'blue') +
+  labs(x = '', y = 'Sale Amount (`000 USD)', title = 'Top Order platforms') +
   coord_flip() +
   theme_grey(base_size = 12)
+
 ```
