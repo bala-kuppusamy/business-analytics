@@ -62,10 +62,10 @@ clean_email_categories <- function(email_campaign) {
     dplyr::filter(PRODUCT_CATEGORY != 'Kitchen & Food')
 
   email_campaign <- email_campaign %>%
-    dplyr::mutate(PRODUCT_CATEGORY = if_else(PRODUCT_CATEGORY == 'Beauty', 'Health/Beauty', PRODUCT_CATEGORY)) %>%
-    dplyr::mutate(PRODUCT_CATEGORY = if_else(PRODUCT_CATEGORY == 'Home & Garden', 'Home Decor', PRODUCT_CATEGORY)) %>%
-    dplyr::mutate(PRODUCT_CATEGORY = if_else(PRODUCT_CATEGORY == 'Kitchen', 'Housewares', PRODUCT_CATEGORY)) %>%
-    dplyr::mutate(PRODUCT_CATEGORY = if_else(PRODUCT_CATEGORY == 'Food', 'Health', PRODUCT_CATEGORY))
+    dplyr::mutate(PRODUCT_CATEGORY = dplyr::if_else(PRODUCT_CATEGORY == 'Beauty', 'Health/Beauty', PRODUCT_CATEGORY)) %>%
+    dplyr::mutate(PRODUCT_CATEGORY = dplyr::if_else(PRODUCT_CATEGORY == 'Home & Garden', 'Home Decor', PRODUCT_CATEGORY)) %>%
+    dplyr::mutate(PRODUCT_CATEGORY = dplyr::if_else(PRODUCT_CATEGORY == 'Kitchen', 'Housewares', PRODUCT_CATEGORY)) %>%
+    dplyr::mutate(PRODUCT_CATEGORY = dplyr::if_else(PRODUCT_CATEGORY == 'Food', 'Health', PRODUCT_CATEGORY))
 
   email_campaign <- email_campaign %>%
     dplyr::group_by(CAMPAIGN_DATE, PRODUCT_CATEGORY) %>%
@@ -79,13 +79,13 @@ mark_campaign_orders <- function(emails, orders) {
     dplyr::left_join(emails, by = c('ORDER_DATE' = 'CAMPAIGN_DATE', 'PRODUCT_CATEGORY'))
 
   orders <- orders %>%
-    dplyr::mutate(IS_JANUARY_ORDER = if_else(lubridate::month(ORDER_DATE) == 1, TRUE, FALSE))
+    dplyr::mutate(IS_JANUARY_ORDER = dplyr::if_else(lubridate::month(ORDER_DATE) == 1, TRUE, FALSE))
 
   orders <- orders %>%
     dplyr::mutate(IS_CAMPAIGN = FALSE) %>%
-    dplyr::mutate(IS_CAMPAIGN = if_else(!is.na(CAMPAIGN_SPEND) & CAMPAIGN_SPEND > 0, TRUE, IS_CAMPAIGN)) %>%
-    dplyr::mutate(IS_CAMPAIGN = if_else(EMAIL_HOLD_IND == 'Y', FALSE, IS_CAMPAIGN)) %>%
-    dplyr::mutate(IS_CAMPAIGN = if_else(EMAIL_JANUARAY_ONLY_HOLD_IND == 'Y' & IS_JANUARY_ORDER == TRUE, FALSE, IS_CAMPAIGN))
+    dplyr::mutate(IS_CAMPAIGN = dplyr::if_else(!is.na(CAMPAIGN_SPEND) & CAMPAIGN_SPEND > 0, TRUE, IS_CAMPAIGN)) %>%
+    dplyr::mutate(IS_CAMPAIGN = dplyr::if_else(EMAIL_HOLD_IND == 'Y', FALSE, IS_CAMPAIGN)) %>%
+    dplyr::mutate(IS_CAMPAIGN = dplyr::if_else(EMAIL_JANUARAY_ONLY_HOLD_IND == 'Y' & IS_JANUARY_ORDER == TRUE, FALSE, IS_CAMPAIGN))
 
   return(orders)
 }
@@ -111,6 +111,7 @@ merge_email_sale_amt <- function(emails, orders, avg_daily_sale) {
     dplyr::group_by(ORDER_DATE, PRODUCT_CATEGORY) %>%
     dplyr::summarize(CAMPAIGN_ORDER_AMT = sum(TOTAL_LINE_AMT))
 
+  # add 'All' category record
   order_summary %<>%
     dplyr::group_by(ORDER_DATE) %>%
     dplyr::summarize(CAMPAIGN_ORDER_AMT = sum(CAMPAIGN_ORDER_AMT), PRODUCT_CATEGORY = 'All') %>%
@@ -131,7 +132,11 @@ merge_email_sale_amt <- function(emails, orders, avg_daily_sale) {
 prep_emails <- function(email_campaign, orders) {
   emails <- clean_email_categories(email_campaign = email_campaign)
 
-  non_campaign_orders <- mark_campaign_orders(emails = emails, orders = orders) %>%
+  orders_with_campaign_info <- mark_campaign_orders(emails = emails, orders = orders)
+  dplyr::glimpse(orders_with_campaign_info)
+  saveRDS(emails, file = 'rdata/orders_with_email.Rda')
+
+  non_campaign_orders <- orders_with_campaign_info %>%
     dplyr::filter(IS_CAMPAIGN == FALSE)
 
   avg_daily_sale <- calc_avg_daily_sale(orders = non_campaign_orders)
