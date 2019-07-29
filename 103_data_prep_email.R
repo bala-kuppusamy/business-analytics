@@ -148,11 +148,11 @@ merge_email_sale_amt <- function(emails, orders, avg_daily_sale) {
 prep_emails <- function(email_campaign, orders) {
   emails <- clean_email_categories(email_campaign = email_campaign)
 
-  orders_with_campaign_info <- mark_campaign_orders(emails = emails, orders = orders)
-  dplyr::glimpse(orders_with_campaign_info)
-  saveRDS(emails, file = 'rdata/orders_with_email.Rda')
+  orders_with_email <- mark_campaign_orders(emails = emails, orders = orders)
+  dplyr::glimpse(orders_with_email)
+  saveRDS(orders_with_email, file = 'rdata/orders_web_with_email.Rda')
 
-  non_campaign_orders <- orders_with_campaign_info %>%
+  non_campaign_orders <- orders_with_email %>%
     dplyr::filter(IS_CAMPAIGN == FALSE)
 
   avg_daily_sale <- calc_avg_daily_sale(orders = non_campaign_orders)
