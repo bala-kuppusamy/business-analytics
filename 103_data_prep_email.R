@@ -100,7 +100,8 @@ calc_avg_daily_sale <- function(orders) {
     dplyr::summarise(TOT_ORDER_AMT = sum(ORDER_AMT), ORDER_DAYS = n(), AVG_DAILY_SALE = TOT_ORDER_AMT / ORDER_DAYS)
 
   avg_daily_sale %<>%
-    dplyr::summarise(TOT_ORDER_AMT = sum(TOT_ORDER_AMT), ORDER_DAYS = sum(ORDER_DAYS), AVG_DAILY_SALE = TOT_ORDER_AMT / ORDER_DAYS, PRODUCT_CATEGORY = 'All') %>%
+    dplyr::summarise(TOT_ORDER_AMT = sum(TOT_ORDER_AMT), ORDER_DAYS = sum(ORDER_DAYS),
+                     AVG_DAILY_SALE = TOT_ORDER_AMT / ORDER_DAYS, PRODUCT_CATEGORY = 'All') %>%
     dplyr::bind_rows(avg_daily_sale)
 
   return(avg_daily_sale)
