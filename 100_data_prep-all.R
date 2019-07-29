@@ -9,8 +9,8 @@ source(file = '102_data_prep_airtime.R')
 source(file = '103_data_prep_email.R')
 
 ## flags to control whether to build dataframes from csv or load from saved rds files.
-use_rds_order_master <- TRUE
-use_rds_orders <- TRUE
+use_rds_order_master <- FALSE
+use_rds_orders <- FALSE
 use_rds_emails <- FALSE
 use_rds_airtime <- FALSE
 
@@ -46,6 +46,22 @@ summary(orders)
 dplyr::glimpse(orders)
 
 
+## prepare airtime
+orders_onair <- orders %>%
+  dplyr::filter(ORDER_PLATFORM == 'On Air')
+
+if (use_rds_airtime) {
+  print('Loading airtime - from saved rds file...')
+  orders <- readRDS(file = 'rdata/airtime_merged.Rda')
+} else {
+  print('Building airtime - by merging datasets...')
+  airtime <- prep_airtime(airtime = product_airtime, product_master = product_master, orders = orders_onair)
+  saveRDS(orders, file = 'rdata/airtime_merged.Rda')
+}
+summary(airtime)
+dplyr::glimpse(airtime)
+
+
 ## prepare emails
 orders_web <- orders %>%
   dplyr::filter(ORDER_PLATFORM == 'QVC.COM')
@@ -61,19 +77,4 @@ if (use_rds_emails) {
 summary(emails)
 dplyr::glimpse(emails)
 
-
-## prepare airtime
-orders_onair <- orders %>%
-  dplyr::filter(ORDER_PLATFORM == 'On Air')
-
-if (use_rds_airtime) {
-  print('Loading airtime - from saved rds file...')
-  orders <- readRDS(file = 'rdata/airtime_merged.Rda')
-} else {
-  print('Building airtime - by merging datasets...')
-  airtime <- prep_airtime(airtime = product_airtime, product_master = product_master, orders = orders_onair)
-  saveRDS(orders, file = 'rdata/airtime_merged.Rda')
-}
-summary(airtime)
-dplyr::glimpse(airtime)
 
