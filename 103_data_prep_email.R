@@ -112,24 +112,24 @@ merge_email_sale_amt <- function(emails, orders, avg_daily_sale) {
     dplyr::group_by(ORDER_DATE, PRODUCT_CATEGORY) %>%
     dplyr::summarize(CAMPAIGN_ORDER_AMT = sum(TOTAL_LINE_AMT)) %>%
     dplyr::mutate(NEXT_DATE = ORDER_DATE + lubridate::days(1)) %>%
-    dplyr::mutate(CAMPAIGN_ORDER_AMT = dplyr::if_else(is.na(CAMPAIGN_ORDER_AMT), 0, CAMPAIGN_ORDER_AMT))
+    dplyr::mutate(CAMPAIGN_ORDER_AMT_DAY_1 = dplyr::if_else(is.na(CAMPAIGN_ORDER_AMT), 0, CAMPAIGN_ORDER_AMT))
 
   order_summary_2day <- order_summary %>%
-    dplyr::rename(CAMPAIGN_ORDER_AMT_2DAY = CAMPAIGN_ORDER_AMT)
+    dplyr::rename(CAMPAIGN_ORDER_AMT_DAY_2 = CAMPAIGN_ORDER_AMT_DAY_1)
 
   order_summary %<>%
     dplyr::left_join(order_summary_2day, by = c('NEXT_DATE' = 'ORDER_DATE', 'PRODUCT_CATEGORY')) %>%
-    dplyr::select(ORDER_DATE, PRODUCT_CATEGORY, CAMPAIGN_ORDER_AMT, CAMPAIGN_ORDER_AMT_2DAY) %>%
-    dplyr::mutate(TOTAL_CAMPAIGN_ORDER_AMT = CAMPAIGN_ORDER_AMT + CAMPAIGN_ORDER_AMT_2DAY) %>%
-    dplyr::mutate(CAMPAIGN_ORDER_AMT_2DAY = dplyr::if_else(is.na(CAMPAIGN_ORDER_AMT_2DAY), 0, CAMPAIGN_ORDER_AMT_2DAY)) %>%
-    dplyr::mutate(TOTAL_CAMPAIGN_ORDER_AMT = dplyr::if_else(is.na(TOTAL_CAMPAIGN_ORDER_AMT), 0, TOTAL_CAMPAIGN_ORDER_AMT))
+    dplyr::select(ORDER_DATE, PRODUCT_CATEGORY, CAMPAIGN_ORDER_AMT_DAY_1, CAMPAIGN_ORDER_AMT_DAY_2) %>%
+    dplyr::mutate(CAMPAIGN_ORDER_AMT_TOTAL = CAMPAIGN_ORDER_AMT_DAY_1 + CAMPAIGN_ORDER_AMT_DAY_2) %>%
+    dplyr::mutate(CAMPAIGN_ORDER_AMT_DAY_2 = dplyr::if_else(is.na(CAMPAIGN_ORDER_AMT_DAY_2), 0, CAMPAIGN_ORDER_AMT_DAY_2)) %>%
+    dplyr::mutate(CAMPAIGN_ORDER_AMT_TOTAL = dplyr::if_else(is.na(CAMPAIGN_ORDER_AMT_TOTAL), 0, CAMPAIGN_ORDER_AMT_TOTAL))
 
   # add 'All' category record
   order_summary %<>%
     dplyr::group_by(ORDER_DATE) %>%
-    dplyr::summarize(CAMPAIGN_ORDER_AMT = sum(CAMPAIGN_ORDER_AMT),
-                     CAMPAIGN_ORDER_AMT_2DAY = sum(CAMPAIGN_ORDER_AMT_2DAY),
-                     TOTAL_CAMPAIGN_ORDER_AMT = sum(TOTAL_CAMPAIGN_ORDER_AMT),
+    dplyr::summarize(CAMPAIGN_ORDER_AMT_DAY_1 = sum(CAMPAIGN_ORDER_AMT_DAY_1),
+                     CAMPAIGN_ORDER_AMT_DAY_2 = sum(CAMPAIGN_ORDER_AMT_DAY_2),
+                     CAMPAIGN_ORDER_AMT_TOTAL = sum(CAMPAIGN_ORDER_AMT_TOTAL),
                      PRODUCT_CATEGORY = 'All') %>%
     dplyr::bind_rows(order_summary)
 
@@ -145,12 +145,30 @@ merge_email_sale_amt <- function(emails, orders, avg_daily_sale) {
   return(emails)
 }
 
+prepare_daily_summary <- function(orders, emails) {
+  orders_web_daily_summary <- orders %>%
+    dplyr::group_by(ORDER_DATE, PRODUCT_CATEGORY) %>%
+    dplyr::summarise(DAILY_SALE_AMT = sum(TOTAL_LINE_AMT)) %>%
+    dplyr::left_join(emails, by = c('ORDER_DATE' = 'CAMPAIGN_DATE', 'PRODUCT_CATEGORY')) %>%
+    dplyr::mutate(HAD_CAMPAIGN = dplyr::if_else(is.na(CAMPAIGN_SPEND), 'N', 'Y')) %>%
+    dplyr::mutate(WEEKDAY = lubridate::wday(ORDER_DATE, label = TRUE))
+
+  orders_web_daily_summary$PRODUCT_CATEGORY = factor(orders_web_daily_summary$PRODUCT_CATEGORY)
+  orders_web_daily_summary$HAD_CAMPAIGN = factor(orders_web_daily_summary$HAD_CAMPAIGN)
+
+  return(orders_web_daily_summary)
+}
+
 prep_emails <- function(email_campaign, orders) {
   emails <- clean_email_categories(email_campaign = email_campaign)
 
   orders_with_email <- mark_campaign_orders(emails = emails, orders = orders)
   dplyr::glimpse(orders_with_email)
   saveRDS(orders_with_email, file = 'rdata/orders_web_with_email.Rda')
+
+  orders_daily_summary <- prepare_daily_summary(orders = orders_with_email, emails = emails)
+  dplyr::glimpse(orders_daily_summary)
+  saveRDS(orders_daily_summary, file = 'rdata/orders_daily_summary.Rda')
 
   non_campaign_orders <- orders_with_email %>%
     dplyr::filter(IS_CAMPAIGN == FALSE)

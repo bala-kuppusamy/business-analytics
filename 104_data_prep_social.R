@@ -9,7 +9,7 @@ library(tidytext)
 analyze_text <- function(social) {
   SENTIMENT <- social[1, ]$SENTIMENT
   WEEK <- social[1, ]$WEEK
-  print(paste('Doing text analysis for sentiment -', SENTIMENT, 'for week -', WEEK))
+  print(paste('Doing text analysis for sentiment -', SENTIMENT, ', for week -', WEEK))
 
   social_corpus <- quanteda::corpus(social$POST)
 
@@ -40,15 +40,19 @@ analyze_text <- function(social) {
 
   plot_title <- paste('Sentiment -', SENTIMENT, 'Week -', WEEK)
 
-  top_terms %>%
+  p <- top_terms %>%
     ggplot2::ggplot(mapping = aes(term, beta, fill = factor(topic))) +
     ggplot2::geom_bar(stat = 'identity', show.legend = FALSE) +
     ggplot2::facet_wrap(~topic, scales = 'free') +
-    ggplot2::labs(title = plot_title)
+    ggplot2::labs(title = plot_title) +
     ggplot2::coord_flip()
+
+  p
+  ggplot2::ggsave(filename = 'social-text-analysis.png', plot = p)
+  print('Saved the text-analysis plot in file -> social-text-analysis.png')
 }
 
-do_text_analysis <- function(social) {
+execute_text_analysis <- function(social) {
   social <- social[order(social$SENTIMENT), ]
 
   # social %>%
@@ -62,14 +66,14 @@ do_text_analysis <- function(social) {
   analyze_text(social_sn)
 }
 
-prep_social <- function(social, do_analysis) {
+prep_social <- function(social, do_text_analysis) {
   social$INTERACTION_DATE <- lubridate::mdy_hms(social$INTERACTION_DATE, tz = 'EST')
   social$SOURCE_TYPE <- factor(social$SOURCE_TYPE)
   social$SENTIMENT <- factor(social$SENTIMENT)
   social$WEEK <- lubridate::week(social$INTERACTION_DATE)
 
-  if (do_analysis == TRUE) {
-    do_text_analysis(social)
+  if (do_text_analysis == TRUE) {
+    execute_text_analysis(social)
   }
   return(social)
 }
