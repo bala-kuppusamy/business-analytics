@@ -7,9 +7,12 @@ library(forecast)
 
 orders_daily_summary <- readRDS(file = 'rdata/orders_daily_summary.Rda')
 
+# category <- 'Accessories'
+category <- 'Home Decor'
+
 # filter the data for 1 product category
 orders_daily_summary_accessories <- orders_daily_summary %>%
-  dplyr::filter(PRODUCT_CATEGORY == 'Accessories')
+  dplyr::filter(PRODUCT_CATEGORY == category)
 
 had_campaign <- orders_daily_summary_accessories$HAD_CAMPAIGN
 had_campaign <- ifelse(had_campaign == 'Y', 1, 0)

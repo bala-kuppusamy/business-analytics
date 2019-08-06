@@ -15,9 +15,9 @@ source(file = '103_data_prep_email.R')
 source(file = '104_data_prep_social.R')
 
 ## flags to control whether to build dataframes from csv or load from saved rds files.
-use_rds_order_master <- TRUE
-use_rds_orders <- TRUE
-use_rds_airtime <- TRUE
+use_rds_order_master <- FALSE
+use_rds_orders <- FALSE
+use_rds_airtime <- FALSE
 use_rds_emails <- FALSE
 
 do_text_analysis <- TRUE
@@ -88,6 +88,9 @@ dplyr::glimpse(orders_web_with_email)
 
 orders_daily_summary <- readRDS(file = 'rdata/orders_daily_summary.Rda')
 dplyr::glimpse(orders_daily_summary)
+
+write.csv(emails, file = 'csv/email_campaign.csv')
+write.csv(orders_daily_summary, file = 'csv/orders_daily_summary.csv')
 
 
 ## prepare social
