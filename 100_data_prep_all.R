@@ -1,4 +1,13 @@
 
+# install.packages('tidyverse')
+# install.packages('lubridate')
+# install.packages('purrr')
+# install.packages('ggplot2')
+# install.packages('quanteda')
+# install.packages('stopwords')
+# install.packages('topicmodels')
+# install.packages('tidytext')
+
 library(tidyverse)
 library(lubridate)
 library(purrr)
